@@ -11,6 +11,8 @@
     month_line/3,
     debit_line/3,
     credit_line/3,
+    account_lines/2,
+    account_line/2,
     debit_line/2,
     credit_line/2,
     change/3
@@ -139,7 +141,27 @@ debit_line(Account, Month, Line):-
     
 credit_line(Account, Month, Line):-
     Line = line(_-Month-_, _, _, _, _),
-    credit_line(Account, Line).    
+    credit_line(Account, Line).
+
+%% account_lines(+Account, Lines:list) is det.
+%
+% Retrieves account lines sorted by date.
+% See also account_line/2.
+    
+account_lines(Account, Lines):-
+    findall(Line, account_line(Account, Line), Tmp),
+    sort(Tmp, Lines).
+
+%% account_line(?Account, ?Line) is nondet.
+%
+% Retrieves line that credits or debits to
+% the given account.
+    
+account_line(Account, Line):-
+    debit_line(Account, Line).
+    
+account_line(Account, Line):-
+    credit_line(Account, Line).
 
 %% debit_line(?Account, ?Line) is nondet.
 %

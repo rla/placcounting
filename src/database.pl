@@ -117,7 +117,7 @@ read_accounts(Directory):-
 % invalid_account_entry(YamlHash) when the account
 % cannot be asserted.
     
-assert_account(Doc):-
+assert_account(hash(Doc)):-
     memberchk(code-Code, Doc),
     memberchk(name-Name, Doc),
     memberchk(type-Type, Doc),
@@ -133,13 +133,13 @@ assert_account(Doc):-
 % Throws invalid_transaction_entry(YamlHash)
 % when the transaction cannot be assertes. 
     
-assert_transaction(Tx):-
+assert_transaction(hash(Tx)):-
     gensym(tx, TxId),
     memberchk(desc-Desc, Tx),
     memberchk(date-DateStr, Tx),
     date_term(DateStr, Date),
     assert(transaction(TxId, Desc, Date)),
-    memberchk(lines-Lines, Tx),
+    memberchk(lines-array(Lines), Tx),
     maplist(assert_line(TxId), Lines), !.
     
 assert_transaction(Tx):-
@@ -154,7 +154,7 @@ assert_transaction(Tx):-
 % cannot be asserted. Also applies check_account_exists/1
 % for both debit and credit accounts.
     
-assert_line(TxId, Line):-
+assert_line(TxId, hash(Line)):-
     memberchk(debit-Debit, Line),
     memberchk(credit-Credit, Line),
     memberchk(sum-Sum, Line),
