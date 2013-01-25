@@ -151,18 +151,32 @@ assert_transaction(Tx):-
 % given by TxId. YamlHash must contain properties
 % debit, credit, sum and may contain property desc.
 % Throws invalid_line_entry(YamlHash) when the line
-% cannot be asserted.
+% cannot be asserted. Also applies check_account_exists/1
+% for both debit and credit accounts.
     
 assert_line(TxId, Line):-
     memberchk(debit-Debit, Line),
     memberchk(credit-Credit, Line),
     memberchk(sum-Sum, Line),
+    check_account_exists(Debit),
+    check_account_exists(Credit),
     atom_number(Sum, Amount),
     (memberchk(desc-Desc, Line) -> true; Desc = '' ),
     assert(transaction_line(TxId, Debit, Credit, Amount, Desc)), !.
     
 assert_line(_, Line):-
-    throw(invalid_line_entry(Line)).    
+    throw(invalid_line_entry(Line)).
+
+%% check_account_exists(+Account) is det.
+%
+% Checks that the given account exists.
+% Used before asserting the transaction line.
+    
+check_account_exists(Account):-
+    account(Account, _, _), !.
+    
+check_account_exists(Account):-
+    throw(account_does_not_exist(Account)).    
 
 %% clear_database is det.
 %
