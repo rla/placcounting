@@ -1,0 +1,23 @@
+code: 1
+name: Cash
+type: asset
+---
+code: 2
+name: Bank
+type: asset
+---
+code: 3
+name: Sales
+type: income
+---
+code: 4
+name: Expenses
+type: expense
+---
+code: 5
+name: Accounts payable
+type: liability
+---
+code: 6
+name: Owner's equity
+type: equity

@@ -1,6 +1,7 @@
 :- module(analysis, [
     balance/3,
     balance/2,
+    balance/4,
     debit_total/2,
     credit_total/2,
     debit_total/3,
@@ -27,23 +28,26 @@
 % and month.
 
 balance(Account, Month, Balance):-
-    account(Account, _, Type),
     debit_total(Account, Month, Debit),
     credit_total(Account, Month, Credit),
-    change(Type, debit, DSign),
-    change(Type, credit, CSign), !,
-    DebitTerm =.. [DSign, 0, Debit],
-    CreditTerm =.. [CSign, 0, Credit],
-    Balance is DebitTerm + CreditTerm.
+    balance(Account, Debit, Credit, Balance).
 
 %% balance(+Account, -Balance) is det.
 %
 % Calculates the balance for the given account.
 
 balance(Account, Balance):-
-    account(Account, _, Type),
     debit_total(Account, Debit),
     credit_total(Account, Credit),
+    balance(Account, Debit, Credit, Balance).
+
+%% balance(+Account, +Debit, +Credit, -Balance) is det.
+%
+% Calculates balance using precalculated total
+% credit and total debit.
+
+balance(Account, Debit, Credit, Balance):-
+    account(Account, _, Type),
     change(Type, debit, DSign),
     change(Type, credit, CSign), !,
     DebitTerm =.. [DSign, 0, Debit],
@@ -63,7 +67,7 @@ debit_total(Account, Total):-
 %
 % Calculates the toal sum of amounts of
 % the credit lines for the given account.
-    
+
 credit_total(Account, Total):-
     findall(Line, credit_line(Account, Line), Lines),
     lines_amount(Lines, Total).
@@ -72,7 +76,7 @@ credit_total(Account, Total):-
 %
 % Calculates the toal sum of amounts of
 % the debit lines for the given account and month.
-    
+
 debit_total(Account, Month, Total):-
     findall(Line, debit_line(Account, Month, Line), Lines),
     maplist(line_amount, Lines, Amounts),
@@ -82,7 +86,7 @@ debit_total(Account, Month, Total):-
 %
 % Calculates the toal sum of amounts of
 % the credit lines for the given account and month.
-    
+
 credit_total(Account, Month, Total):-
     findall(Line, credit_line(Account, Month, Line), Lines),
     lines_amount(Lines, Total).
@@ -90,7 +94,7 @@ credit_total(Account, Month, Total):-
 %% lines_amount(+Lines:list, -Total) is det.
 %
 % Calculates the total sum of amounts of
-% the given list of lines. 
+% the given list of lines.
 
 lines_amount(Lines, Total):-
     maplist(line_amount, Lines, Amounts),
@@ -99,7 +103,7 @@ lines_amount(Lines, Total):-
 %% line_amount(+Line, -Amount) is det.
 %
 % Extracts Amount from the line.
-    
+
 line_amount(line(_, _, _, Amount, _), Amount).
 
 %% month_lines(+Account, +Month, -Lines) is det.
@@ -116,10 +120,10 @@ month_lines(Account, Month, Sorted):-
 % Retrieves those line/5 clauses that debit or credit
 % to the given account on the given month.
 % See also database:line/5.
-    
+
 month_line(Account, Month, Line):-
     credit_line(Account, Month, Line).
-    
+
 month_line(Account, Month, Line):-
     debit_line(Account, Month, Line).
 
@@ -128,7 +132,7 @@ month_line(Account, Month, Line):-
 % Retrieves those line/5 clauses that debit to
 % the given account on the given month.
 % See also database:line/5.
-    
+
 debit_line(Account, Month, Line):-
     Line = line(_-Month-_, _, _, _, _),
     debit_line(Account, Line).
@@ -138,7 +142,7 @@ debit_line(Account, Month, Line):-
 % Retrieves those line/5 clauses that credit to
 % the given account on the given month.
 % See also database:line/5.
-    
+
 credit_line(Account, Month, Line):-
     Line = line(_-Month-_, _, _, _, _),
     credit_line(Account, Line).
@@ -147,7 +151,7 @@ credit_line(Account, Month, Line):-
 %
 % Retrieves account lines sorted by date.
 % See also account_line/2.
-    
+
 account_lines(Account, Lines):-
     findall(Line, account_line(Account, Line), Tmp),
     sort(Tmp, Lines).
@@ -156,10 +160,10 @@ account_lines(Account, Lines):-
 %
 % Retrieves line that credits or debits to
 % the given account.
-    
+
 account_line(Account, Line):-
     debit_line(Account, Line).
-    
+
 account_line(Account, Line):-
     credit_line(Account, Line).
 
@@ -167,7 +171,7 @@ account_line(Account, Line):-
 %
 % Retrieves those line/5 clauses that debit to
 % the given account. See also database:line/5.
-    
+
 debit_line(Account, Line):-
     line(Date, Account, Credit, Amount, Desc),
     Line = line(Date, Account, Credit, Amount, Desc).
@@ -176,7 +180,7 @@ debit_line(Account, Line):-
 %
 % Retrieves those line/5 clauses that credit to
 % the given account. See also database:line/5.
-    
+
 credit_line(Account, Line):-
     line(Date, Debit, Account, Amount, Desc),
     Line = line(Date, Debit, Account, Amount, Desc).
@@ -194,5 +198,5 @@ change(income, debit, (-)).
 change(income, credit, (+)).
 change(expense, debit, (+)).
 change(expense, credit, (-)).
-change(equity, debit, (+)).
-change(equity, credit, (-)).
+change(equity, debit, (-)).
+change(equity, credit, (+)).

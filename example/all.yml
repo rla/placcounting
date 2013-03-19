@@ -1,0 +1,24 @@
+date: 2012-01-01
+desc: Opening balances
+lines:
+  - debit: 2
+    credit: 6
+    sum: 2556.00
+---
+date: 2012-02-04
+desc: VPS hosting invoice #123, January
+lines:
+  - debit: 4
+    credit: 5
+    sum: 14.0
+---
+date: 2012-02-05
+desc: Paying VPS hosting invoice #123
+lines:
+  - debit: 5
+    credit: 2
+    sum: 14.0
+  - debit: 4
+    credit: 2
+    sum: 0.38
+    desc: Bank's fee

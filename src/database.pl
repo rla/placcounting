@@ -1,4 +1,5 @@
 :- module(database, [
+    reread/0,
     read_all/1,
     account/3,
     transaction/3,
@@ -40,7 +41,13 @@
 %
 % Helper predicate to work with transaction lines. Desc is
 % in the format 'TxDesc (LineDesc)' when the line description
-% is entered. Otherwise it is same as the transaction description. 
+% is entered. Otherwise it is same as the transaction description.
+
+%% directory(-Directory) is det.
+%
+% Stores the location of lastly loaded database.
+
+:- dynamic(directory/1).
 
 line(Date, Debit, Credit, Amount, Desc):-
     transaction_line(TxId, Debit, Credit, Amount, DescLine),
@@ -50,8 +57,17 @@ line(Date, Debit, Credit, Amount, Desc):-
         Desc = DescTx
     ;
         DescLine \= '',
-        format(atom(Desc), '~w (~w)', [DescTx, DescLine]) 
+        format(atom(Desc), '~w (~w)', [DescTx, DescLine])
     ).
+
+%% reread is det.
+%
+% Re-reads the lastly read database. Fails when no database
+% was opened before.
+
+reread:-
+    directory(Directory),
+    read_all(Directory).
 
 %% read_all(+Directory) is det.
 %
@@ -62,17 +78,18 @@ line(Date, Debit, Credit, Amount, Desc):-
 
 read_all(Directory):-
     clear_database,
+    assert(directory(Directory)),
     read_accounts(Directory),
     directory_files(Directory, Entries),
     exclude(special_file, Entries, Files),
-    include(yaml_file, Files, YamlFiles),    
+    include(yaml_file, Files, YamlFiles),
     maplist(read_transactions(Directory), YamlFiles),
     print_stat.
 
 %% print_stat is det.
 %
 % Outputs statistics about the current database.
-    
+
 print_stat:-
     findall(_, account(_, _, _), Accounts),
     findall(_, transaction(_, _, _), Transactions),
@@ -88,7 +105,7 @@ print_stat:-
 %
 % Reads all transactions and lines and asserts
 % them from the given file from the given directory.
-    
+
 read_transactions(Directory, File):-
     atomic_list_concat([ Directory, File ], '/', Name),
     format('reading ~w~n', [ Name ]),
@@ -116,13 +133,13 @@ read_accounts(Directory):-
 % properties code, name and type. Throws
 % invalid_account_entry(YamlHash) when the account
 % cannot be asserted.
-    
+
 assert_account(hash(Doc)):-
     memberchk(code-Code, Doc),
     memberchk(name-Name, Doc),
     memberchk(type-Type, Doc),
     assert(account(Code, Name, Type)), !.
-    
+
 assert_account(Doc):-
     throw(invalid_account_entry(Doc)).
 
@@ -131,8 +148,8 @@ assert_account(Doc):-
 % Asserts the transaction entry. YamlHash
 % must contain properties desc, date and lines.
 % Throws invalid_transaction_entry(YamlHash)
-% when the transaction cannot be assertes. 
-    
+% when the transaction cannot be assertes.
+
 assert_transaction(hash(Tx)):-
     gensym(tx, TxId),
     memberchk(desc-Desc, Tx),
@@ -141,7 +158,7 @@ assert_transaction(hash(Tx)):-
     assert(transaction(TxId, Desc, Date)),
     memberchk(lines-array(Lines), Tx),
     maplist(assert_line(TxId), Lines), !.
-    
+
 assert_transaction(Tx):-
     throw(invalid_transaction_entry(Tx)).
 
@@ -153,7 +170,7 @@ assert_transaction(Tx):-
 % Throws invalid_line_entry(YamlHash) when the line
 % cannot be asserted. Also applies check_account_exists/1
 % for both debit and credit accounts.
-    
+
 assert_line(TxId, hash(Line)):-
     memberchk(debit-Debit, Line),
     memberchk(credit-Credit, Line),
@@ -163,7 +180,7 @@ assert_line(TxId, hash(Line)):-
     atom_number(Sum, Amount),
     (memberchk(desc-Desc, Line) -> true; Desc = '' ),
     assert(transaction_line(TxId, Debit, Credit, Amount, Desc)), !.
-    
+
 assert_line(_, Line):-
     throw(invalid_line_entry(Line)).
 
@@ -171,24 +188,25 @@ assert_line(_, Line):-
 %
 % Checks that the given account exists.
 % Used before asserting the transaction line.
-    
+
 check_account_exists(Account):-
     account(Account, _, _), !.
-    
+
 check_account_exists(Account):-
-    throw(account_does_not_exist(Account)).    
+    throw(account_does_not_exist(Account)).
 
 %% clear_database is det.
 %
 % Clears all account, transaction and
 % transaction_line entries.
-    
+
 clear_database:-
     format('cleaning database~n'),
+    retractall(directory(_)),
     retractall(account(_, _, _)),
     retractall(transaction(_, _, _)),
     retractall(transaction_line(_, _, _, _, _)).
-    
+
 special_file('accounts.yml').
 special_file('reports.yml').
 special_file('settings.yml').
